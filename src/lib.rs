@@ -3,9 +3,6 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, sleep};
 use std::time::Duration;
 
-const DEFAULT_PATTERN_DURATION_MS: Duration = Duration::from_millis(1000);
-const DEFAULT_COLOUR: PwmLedColour = PwmLedColour::RED;
-
 pub mod rgbled;
 
 pub enum Pattern {
@@ -18,7 +15,7 @@ pub enum Pattern {
 pub struct PatternHandler {
     driver: Arc<Mutex<RgbLed>>,
     pattern: Arc<Mutex<Pattern>>,
-    is_running: Arc<Mutex<bool>>,
+    is_running: bool,
 }
 
 impl PatternHandler {
@@ -26,7 +23,7 @@ impl PatternHandler {
         Self {
             driver: Arc::new(Mutex::new(rgb_led)),
             pattern: Arc::new(Mutex::new(pattern)),
-            is_running: Arc::new(Mutex::new(false)),
+            is_running: false,
         }
     }
 
@@ -36,19 +33,16 @@ impl PatternHandler {
         }
     }
 
-    pub fn start(&self) {
-        if let Ok(mut is_running_guard) = self.is_running.lock() {
-            if *is_running_guard {
-                println!("PatternHandler already running");
-                return;
-            } else {
-                *is_running_guard = true;
-            }
+    pub fn start(&mut self) {
+        if self.is_running {
+            println!("PatternHandler already running");
+            return;
+        } else {
+            self.is_running = true;
         }
 
         let pattern = self.pattern.clone();
         let led = self.driver.clone();
-        let is_running = self.is_running.clone();
 
         thread::spawn(move || {
             let mut led = led.lock().expect("Could not get LED guard");
@@ -84,6 +78,7 @@ impl PatternHandler {
                         sleep(period / 2)
                     }
                     Pattern::Breathe(period, colour) => {
+                        led.set_colour_rgb(colour).unwrap();
                         for i in 1..=period.as_millis() {
                             led.set_brightness((i / period.as_millis()) as f32).unwrap()
                         }
