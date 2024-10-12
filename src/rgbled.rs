@@ -4,13 +4,13 @@ use sysfs_pwm::Pwm;
 const DEFAULT_PERIOD_NS: u32 = 2000000;
 
 #[derive(Clone, Copy)]
-pub struct Colour {
+pub struct PwmLedColour {
     red: u8,
     green: u8,
     blue: u8,
 }
 
-impl Colour {
+impl PwmLedColour {
     pub fn new(red: u8, green: u8, blue: u8) -> Self {
         Self { red, green, blue }
     }
@@ -22,12 +22,28 @@ impl Colour {
             self.blue as f32 / 255.0,
         ]
     }
+
+    pub const RED: Self = Self {
+        red: 255,
+        green: 0,
+        blue: 0,
+    };
+    pub const GREEN: Self = Self {
+        red: 0,
+        green: 255,
+        blue: 0,
+    };
+    pub const BLUE: Self = Self {
+        red: 0,
+        green: 0,
+        blue: 255,
+    };
 }
 
 pub struct RgbLed {
     pwms: [Pwm; 3],
     period_ns: u32,
-    colour: Colour,
+    colour: PwmLedColour,
     brightness: f32,
 }
 
@@ -41,7 +57,7 @@ impl RgbLed {
         let mut rgbled = Self {
             pwms,
             period_ns: DEFAULT_PERIOD_NS,
-            colour: Colour::new(0, 0, 0),
+            colour: PwmLedColour::new(0, 0, 0),
             brightness: 1.0,
         };
 
@@ -50,7 +66,7 @@ impl RgbLed {
         Ok(rgbled)
     }
 
-    pub fn set_colour_rgb(&mut self, colour: Colour) -> Result<(), Error> {
+    pub fn set_colour_rgb(&mut self, colour: PwmLedColour) -> Result<(), Error> {
         self.colour = colour;
 
         self.set_colour_with_brightness(colour, self.brightness)
@@ -72,7 +88,11 @@ impl RgbLed {
         self.set_colour_with_brightness(self.colour, self.brightness)
     }
 
-    fn set_colour_with_brightness(&mut self, colour: Colour, brightness: f32) -> Result<(), Error> {
+    fn set_colour_with_brightness(
+        &mut self,
+        colour: PwmLedColour,
+        brightness: f32,
+    ) -> Result<(), Error> {
         let mut duty_cycles = colour.to_percentages();
         duty_cycles.iter_mut().for_each(|ds| *ds *= brightness);
 
