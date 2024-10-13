@@ -1,4 +1,5 @@
 use crate::rgbled::{PwmLedColour, RgbLed};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, sleep};
 use std::time::Duration;
@@ -16,6 +17,7 @@ pub struct PatternHandler {
     driver: Arc<Mutex<RgbLed>>,
     pattern: Arc<Mutex<Pattern>>,
     is_running: bool,
+    stop_flag: Arc<AtomicBool>,
 }
 
 impl PatternHandler {
@@ -24,6 +26,7 @@ impl PatternHandler {
             driver: Arc::new(Mutex::new(rgb_led)),
             pattern: Arc::new(Mutex::new(pattern)),
             is_running: false,
+            stop_flag: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -39,16 +42,18 @@ impl PatternHandler {
             return;
         } else {
             self.is_running = true;
+            self.stop_flag.store(false, Ordering::SeqCst);
         }
 
         let pattern = self.pattern.clone();
         let led = self.driver.clone();
+        let stop_flag = self.stop_flag.clone();
 
         thread::spawn(move || {
             let mut led = led.lock().expect("Could not get LED guard");
             led.set_brightness(0.0).unwrap();
             led.set_enable(true).unwrap();
-            loop {
+            while !stop_flag.load(Ordering::SeqCst) {
                 let current_pattern = pattern.lock().expect("Could not get pattern guard");
 
                 match *current_pattern {
@@ -89,5 +94,9 @@ impl PatternHandler {
                 }
             }
         });
+    }
+
+    pub fn stop(&self) {
+        self.stop_flag.store(true, Ordering::SeqCst)
     }
 }
