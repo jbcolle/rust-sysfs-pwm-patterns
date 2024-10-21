@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, sleep};
 use std::time::Duration;
+use crate::Pattern::Full;
 
 const DEFAULT_BREATHE_UPDATE_PERIOD_MS: u128 = 5;
 
@@ -135,5 +136,14 @@ impl PatternHandler {
 
     pub fn stop(&self) {
         self.stop_flag.store(true, Ordering::SeqCst)
+    }
+}
+
+impl Drop for PatternHandler {
+    fn drop(&mut self) {
+        self.set_pattern(&Full(PwmLedColour::new(0, 0, 0)));
+        if self.is_running {
+            self.stop();
+        }
     }
 }
