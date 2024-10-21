@@ -4,13 +4,18 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, sleep};
 use std::time::Duration;
 
+const DEFAULT_BREATHE_UPDATE_PERIOD_MS: u128 = 5;
+
 pub mod rgbled;
 
+#[derive(Debug, Clone)]
 pub enum Pattern {
     Blink(Duration, PwmLedColour),
     BlinkTwice(Duration, PwmLedColour),
     BlinkBetweenColours(Duration, PwmLedColour, PwmLedColour),
     Breathe(Duration, PwmLedColour),
+    BreatheBetweenColours(Duration, PwmLedColour, PwmLedColour),
+    Full(PwmLedColour),
 }
 
 pub struct PatternHandler {
@@ -30,9 +35,9 @@ impl PatternHandler {
         }
     }
 
-    pub fn set_pattern(&self, pattern: Pattern) {
+    pub fn set_pattern(&self, pattern: &Pattern) {
         if let Ok(mut current_pattern) = self.pattern.lock() {
-            *current_pattern = pattern;
+            *current_pattern = pattern.clone();
         }
     }
 
@@ -54,18 +59,18 @@ impl PatternHandler {
             led.set_brightness(0.0).unwrap();
             led.set_enable(true).unwrap();
             while !stop_flag.load(Ordering::SeqCst) {
-                let current_pattern = pattern.lock().expect("Could not get pattern guard");
-
-                match *current_pattern {
+                sleep(Duration::from_millis(1));
+                let current_pattern = pattern.lock().expect("Could not get pattern guard").clone();
+                match current_pattern {
                     Pattern::Blink(period, colour) => {
-                        led.set_colour_rgb(colour).unwrap();
+                        led.set_colour(colour).unwrap();
                         led.set_brightness(1.0).unwrap();
                         sleep(period / 2);
                         led.set_brightness(0.0).unwrap();
                         sleep(period / 2);
                     }
                     Pattern::BlinkTwice(period, colour) => {
-                        led.set_colour_rgb(colour).unwrap();
+                        led.set_colour(colour).unwrap();
                         led.set_brightness(1.0).unwrap();
                         sleep(period / 8);
                         led.set_brightness(0.0).unwrap();
@@ -76,19 +81,51 @@ impl PatternHandler {
                         sleep(period * 5 / 8);
                     }
                     Pattern::BlinkBetweenColours(period, colour1, colour2) => {
-                        led.set_colour_rgb(colour1).unwrap();
+                        led.set_colour(colour1).unwrap();
                         led.set_brightness(1.0).unwrap();
                         sleep(period / 2);
-                        led.set_colour_rgb(colour2).unwrap();
+                        led.set_colour(colour2).unwrap();
                         sleep(period / 2)
                     }
                     Pattern::Breathe(period, colour) => {
-                        led.set_colour_rgb(colour).unwrap();
-                        for i in 1..=period.as_millis() {
-                            led.set_brightness((i / period.as_millis()) as f32).unwrap()
+                        led.set_colour(colour).unwrap();
+                        let steps = period.as_millis() / DEFAULT_BREATHE_UPDATE_PERIOD_MS;
+                        for i in 1..(steps / 2) {
+                            led.set_brightness(i as f32 / (period.as_millis() as f32))
+                                .unwrap();
+                            sleep(Duration::from_millis(
+                                DEFAULT_BREATHE_UPDATE_PERIOD_MS as u64,
+                            ));
                         }
-                        for i in (0..(period.as_millis() - 1)).rev() {
-                            led.set_brightness((i / period.as_millis()) as f32).unwrap()
+                        for i2 in (0..steps / 2).rev() {
+                            led.set_brightness(i2 as f32 / (period.as_millis() as f32))
+                                .unwrap();
+                            sleep(Duration::from_millis(
+                                DEFAULT_BREATHE_UPDATE_PERIOD_MS as u64,
+                            ));
+                        }
+                    }
+                    Pattern::Full(colour) => {
+                        led.set_colour(colour).unwrap();
+                        led.set_brightness(1.0).unwrap();
+                    }
+                    Pattern::BreatheBetweenColours(period, colour1, colour2) => {
+                        led.set_colour(colour1).unwrap();
+                        let steps = period.as_millis() / DEFAULT_BREATHE_UPDATE_PERIOD_MS;
+                        for i in 1..(steps / 2) {
+                            led.set_brightness(i as f32 / (period.as_millis() as f32))
+                                .unwrap();
+                            sleep(Duration::from_millis(
+                                DEFAULT_BREATHE_UPDATE_PERIOD_MS as u64,
+                            ));
+                        }
+                        led.set_colour(colour2).unwrap();
+                        for i2 in (0..steps / 2).rev() {
+                            led.set_brightness(i2 as f32 / (period.as_millis() as f32))
+                                .unwrap();
+                            sleep(Duration::from_millis(
+                                DEFAULT_BREATHE_UPDATE_PERIOD_MS as u64,
+                            ));
                         }
                     }
                 }
