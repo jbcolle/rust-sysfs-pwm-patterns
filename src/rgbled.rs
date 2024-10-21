@@ -75,6 +75,21 @@ impl RgbLed {
         Ok(rgbled)
     }
 
+    pub fn new_by_name(
+        name_r: &str,
+        nr_r: u32,
+        name_g: &str,
+        nr_g: u32,
+        name_b: &str,
+        nr_b: u32,
+    ) -> Result<Self, Error> {
+        let pwm_r = Pwm::new_by_name(name_r, nr_r)?;
+        let pwm_g = Pwm::new_by_name(name_g, nr_g)?;
+        let pwm_b = Pwm::new_by_name(name_b, nr_b)?;
+
+        Self::new(pwm_r, pwm_g, pwm_b)
+    }
+
     pub fn set_colour(&mut self, colour: PwmLedColour) -> Result<(), Error> {
         // println!("Setting colour to {:?}", colour);
         self.colour = colour;
