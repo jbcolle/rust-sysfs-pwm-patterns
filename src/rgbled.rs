@@ -3,7 +3,7 @@ use sysfs_pwm::Pwm;
 
 const DEFAULT_PERIOD_NS: u32 = 2000000;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct PwmLedColour {
     red: u8,
     green: u8,
@@ -22,7 +22,6 @@ impl PwmLedColour {
             self.blue as f32 / 255.0,
         ]
     }
-
     pub const RED: Self = Self {
         red: 255,
         green: 0,
@@ -37,6 +36,16 @@ impl PwmLedColour {
         red: 0,
         green: 0,
         blue: 255,
+    };
+    pub const ORANGE: Self = Self {
+        red: 255,
+        green: 70,
+        blue: 0,
+    };
+    pub const YELLOW: Self = Self {
+        red: 200,
+        green: 255,
+        blue: 0,
     };
 }
 
@@ -66,13 +75,15 @@ impl RgbLed {
         Ok(rgbled)
     }
 
-    pub fn set_colour_rgb(&mut self, colour: PwmLedColour) -> Result<(), Error> {
+    pub fn set_colour(&mut self, colour: PwmLedColour) -> Result<(), Error> {
+        // println!("Setting colour to {:?}", colour);
         self.colour = colour;
 
         self.set_colour_with_brightness(colour, self.brightness)
     }
 
     pub fn set_enable(&mut self, enable: bool) -> Result<(), Error> {
+        // println!("Enabling all PWMs");
         self.pwms
             .iter()
             .try_for_each(|pwm| pwm.enable(enable))
@@ -80,6 +91,7 @@ impl RgbLed {
     }
 
     pub fn set_brightness(&mut self, brightness: f32) -> Result<(), Error> {
+        // println!("Setting brightness to {brightness}");
         if !(0.0..=1.0).contains(&brightness) {
             bail!("Brightness {brightness} out of range. Expected 0..=1")
         }
@@ -93,6 +105,7 @@ impl RgbLed {
         colour: PwmLedColour,
         brightness: f32,
     ) -> Result<(), Error> {
+        // println!("Setting brightness {brightness} with colour {:?}", colour);
         let mut duty_cycles = colour.to_percentages();
         duty_cycles.iter_mut().for_each(|ds| *ds *= brightness);
 
