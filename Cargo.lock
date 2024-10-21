@@ -11,6 +11,7 @@ checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
 [[package]]
 name = "sysfs-pwm"
 version = "0.1.0"
+source = "git+https://github.com/otiv-jerome-colle/rust-sysfs-pwm?branch=feature/pwm-chip-by-name#b28b97d2ffd6cf8712e86fc2aac03b3f683dc1f0"
 
 [[package]]
 name = "sysfs-pwm-patterns"
