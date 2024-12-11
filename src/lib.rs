@@ -9,7 +9,7 @@ const DEFAULT_BREATHE_UPDATE_PERIOD_MS: u128 = 5;
 
 pub mod rgbled;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Pattern {
     Blink(Duration, PwmLedColour),
     BlinkTwice(Duration, PwmLedColour),

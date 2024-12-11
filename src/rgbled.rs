@@ -3,7 +3,7 @@ use sysfs_pwm::Pwm;
 
 const DEFAULT_PERIOD_NS: u32 = 2000000;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PwmLedColour {
     red: u8,
     green: u8,
