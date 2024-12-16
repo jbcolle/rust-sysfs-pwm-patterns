@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sysfs-pwm = { git = "https://github.com/otiv-jerome-colle/rust-sysfs-pwm", branch = "feature/pwm-chip-by-name" }
+sysfs-pwm = { git = "https://github.com/otiv-jerome-colle/rust-sysfs-pwm" }
 anyhow = "1.0.89"
